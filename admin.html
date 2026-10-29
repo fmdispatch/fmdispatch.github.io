@@ -1,0 +1,293 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>Admin Panel</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Hind+Siliguri:wght@400;500;600;700&display=swap">
+<style>
+:root{
+  --bg:#060907;--surface:#0F1511;--fg:#F3FFE9;--muted:#9DB391;--line:#24331D;
+  --accent:#B4F31A;--accent-fg:#0A1103;--danger:#FF7A7A;--ok:#6EE7A0;--warn-bg:#33290A;--warn:#FFD23B;
+  --f-display:'Chakra Petch','Arial Narrow',system-ui,sans-serif;
+  --f-body:'Hind Siliguri',system-ui,-apple-system,'Segoe UI',sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.55 var(--f-body);
+  padding:20px max(16px,env(safe-area-inset-right,0px)) 120px max(16px,env(safe-area-inset-left,0px))}
+.wrap{max-width:720px;margin:0 auto;display:grid;gap:16px}
+h1{font:700 28px/1.1 var(--f-display);margin:0;text-transform:uppercase}
+h2{font:700 20px var(--f-display);margin:0;text-transform:uppercase}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.card{display:grid;gap:12px;padding:16px;border:2px solid var(--line);border-radius:14px;background:var(--surface)}
+label{display:grid;gap:4px;font-weight:600;font-size:14px;color:var(--muted)}
+input[type=text],input[type=url],input[type=password],textarea{
+  width:100%;min-height:46px;padding:8px 12px;border-radius:10px;border:2px solid var(--line);background:var(--bg);color:var(--fg);font:500 16px var(--f-body)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media (max-width:520px){.two{grid-template-columns:1fr}}
+.check{display:flex;align-items:center;gap:10px}
+.btn{min-height:46px;padding:0 18px;border-radius:10px;border:2px solid var(--line);background:var(--surface);color:var(--fg);font:700 16px var(--f-display);cursor:pointer}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}
+.btn.danger{color:var(--danger);border-color:var(--danger)}
+.btn.small{min-height:38px;padding:0 12px;font-size:14px}
+.btn:disabled{opacity:.5;cursor:default}
+.btns{display:flex;gap:8px;flex-wrap:wrap}
+.row{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.tabs{display:flex;gap:8px}
+.tab{min-height:42px;padding:0 16px;border-radius:10px;border:2px solid var(--line);background:var(--surface);color:var(--fg);font:700 15px var(--f-display);cursor:pointer}
+.tab[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}
+.item{display:flex;gap:10px;align-items:center;justify-content:space-between;padding:10px 12px;border:2px solid var(--line);border-radius:12px;background:var(--surface);flex-wrap:wrap}
+.item b{min-width:0;overflow-wrap:anywhere;flex:1 1 160px}
+.item small{display:block;color:var(--muted);font-weight:400}
+.thumb{width:56px;height:32px;border-radius:6px;background:var(--line) center/cover;flex:none}
+.help{font-size:13px;color:var(--muted);margin:0}
+.note{padding:12px 14px;border-radius:10px;background:var(--warn-bg);color:var(--warn);font-size:14px}
+.status{min-height:24px;font-weight:600}
+.status.err{color:var(--danger)}.status.ok{color:var(--ok)}
+.bar{position:fixed;left:0;right:0;bottom:0;padding:12px max(16px,env(safe-area-inset-right,0px)) calc(12px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));background:var(--surface);border-top:2px solid var(--line);z-index:5}
+.bar .in{max-width:720px;margin:0 auto;display:flex;gap:12px;align-items:center;justify-content:space-between}
+.dot{display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--muted);margin-right:8px}
+.dot.dirty{background:#E08A00}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- login -->
+  <section id="login" class="card">
+    <h1>Admin login</h1>
+    <p class="help">Only someone with your GitHub access key can change this site. Visitors cannot.</p>
+    <form id="lform" style="display:grid;gap:12px">
+      <div class="two">
+        <label for="lOwner">GitHub username<input type="text" id="lOwner" autocomplete="username" autocapitalize="none" required></label>
+        <label for="lRepo">Repository name<input type="text" id="lRepo" autocapitalize="none" required></label>
+      </div>
+      <label for="lToken">Access key (token)<input type="password" id="lToken" autocomplete="current-password" required></label>
+      <label class="check" for="lRemember"><input type="checkbox" id="lRemember" checked> Remember on this phone or computer</label>
+      <button class="btn primary" type="submit">Log in</button>
+      <div class="status" id="lstatus" role="status"></div>
+    </form>
+  </section>
+
+  <!-- panel -->
+  <div id="panel" hidden style="display:grid;gap:16px">
+    <div class="row"><h1>Admin panel</h1><button class="btn small" id="logout" type="button">Log out</button></div>
+    <div class="tabs"><button class="tab" id="tGames" type="button" aria-pressed="true">Games</button><button class="tab" id="tSite" type="button" aria-pressed="false">Site settings</button></div>
+
+    <section id="pGames" style="display:grid;gap:16px">
+      <form id="gform" class="card">
+        <h2 id="gformTitle">Add a game</h2>
+        <label for="fTitle">Game name<input type="text" id="fTitle" required></label>
+        <label for="fDl">Download link<input type="url" id="fDl" placeholder="https://" required></label>
+        <div class="two">
+          <label for="fCat">Type (PPSSPP, Android, PC)<input type="text" id="fCat" list="cats" required></label>
+          <label for="fSize">Size<input type="text" id="fSize" placeholder="1.2 GB"></label>
+        </div>
+        <datalist id="cats"></datalist>
+        <div class="two">
+          <label for="fVer">Version<input type="text" id="fVer" placeholder="v1.0"></label>
+          <label for="fCover">Cover image (optional)<input type="file" id="fCover" accept="image/*"></label>
+        </div>
+        <label class="check" for="fNew"><input type="checkbox" id="fNew" checked> Show NEW tag</label>
+        <div class="btns"><button class="btn primary" type="submit" id="fSave">Add game</button><button class="btn" type="button" id="fCancel" hidden>Cancel edit</button></div>
+      </form>
+      <h2>Your games</h2>
+      <div id="glist" style="display:grid;gap:8px"></div>
+    </section>
+
+    <section id="pSite" style="display:none">
+      <form id="sform" class="card">
+        <label for="sName">Channel name<input type="text" id="sName" required></label>
+        <label for="sWelcome">Welcome line<input type="text" id="sWelcome"></label>
+        <label for="sLogo">New logo image<input type="file" id="sLogo" accept="image/*"></label>
+        <div id="logoNow" class="help"></div>
+        <label for="sLinks">Social links, one per line: Name | link
+          <textarea id="sLinks" rows="6" style="min-height:140px"></textarea></label>
+        <p class="help">Facebook, YouTube, TikTok, Telegram, WhatsApp and Instagram get their own colours.</p>
+        <h2 style="margin-top:8px">Ads</h2>
+        <p class="help">Paste the code from your ad network (for example Adsterra). Leave a box empty to show no ad there.</p>
+        <label for="aTop">Banner at the top of the games<textarea id="aTop" rows="4" style="min-height:90px;font-family:monospace;font-size:13px"></textarea></label>
+        <label for="aBottom">Banner at the bottom of the games<textarea id="aBottom" rows="4" style="min-height:90px;font-family:monospace;font-size:13px"></textarea></label>
+        <label for="aGlobal">Page-wide script (social bar, popunder, native)<textarea id="aGlobal" rows="4" style="min-height:90px;font-family:monospace;font-size:13px"></textarea></label>
+        <p class="help">Only paste code you copied from your own ad network account. Anything pasted here runs on every visitor's screen.</p>
+        <button class="btn primary" type="submit">Apply settings</button>
+      </form>
+    </section>
+    <div class="note">Changes stay on this screen until you tap <b>Publish</b>. After publishing, the live site updates in about one minute.</div>
+  </div>
+</div>
+
+<div class="bar" id="bar" hidden>
+  <div class="in">
+    <div id="state"><span class="dot" id="dot"></span><span id="stateText">No changes</span></div>
+    <button class="btn primary" id="publish" type="button" disabled>Publish</button>
+  </div>
+</div>
+<div class="wrap" style="margin-top:8px"><div class="status" id="status" role="status"></div></div>
+
+<script>
+(function(){
+  var $=function(id){return document.getElementById(id)};
+  function el(t,c,x){var e=document.createElement(t);if(c)e.className=c;if(x!=null)e.textContent=x;return e}
+  var cfg=null,S=null,sha=null,dirty=false,editingId=null;
+  var KEY="site-admin-v1";
+
+  function say(id,msg,kind){var s=$(id);s.textContent=msg||"";s.className="status"+(kind?" "+kind:"")}
+  function setDirty(v){
+    dirty=v;$("publish").disabled=!v;$("dot").className="dot"+(v?" dirty":"");
+    $("stateText").textContent=v?"Unpublished changes":"No changes";
+  }
+  window.addEventListener("beforeunload",function(e){if(dirty){e.preventDefault();e.returnValue=""}});
+
+  /* ---------- GitHub API ---------- */
+  function api(path,opts){
+    opts=opts||{};opts.headers=Object.assign({"Authorization":"Bearer "+cfg.token,"Accept":"application/vnd.github+json","X-GitHub-Api-Version":"2022-11-28"},opts.headers||{});
+    return fetch("https://api.github.com/repos/"+encodeURIComponent(cfg.owner)+"/"+encodeURIComponent(cfg.repo)+path,opts);
+  }
+  function b64(str){var b=new TextEncoder().encode(str),s="";for(var i=0;i<b.length;i+=8192)s+=String.fromCharCode.apply(null,b.subarray(i,i+8192));return btoa(s)}
+  function unb64(s){var bin=atob(s.replace(/\n/g,"")),b=new Uint8Array(bin.length);for(var i=0;i<bin.length;i++)b[i]=bin.charCodeAt(i);return new TextDecoder().decode(b)}
+
+  async function verify(){
+    var r=await api("");
+    if(r.status===401||r.status===403)throw new Error("The access key is wrong or has expired.");
+    if(r.status===404)throw new Error("Repository not found. Check the username and repository name, and that the key can access it.");
+    if(!r.ok)throw new Error("GitHub said: "+r.status);
+    var j=await r.json();
+    if(!j.permissions||!j.permissions.push)throw new Error("This key can read the repository but not change it. Create a key with Contents: Read and write.");
+  }
+  async function load(){
+    var r=await api("/contents/games.json");
+    if(r.status===404){sha=null;return{name:"My Channel",welcome:"",logo:"",links:[],games:[]}}
+    if(!r.ok)throw new Error("Could not load games.json ("+r.status+")");
+    var j=await r.json();sha=j.sha;var text;
+    if(j.content&&j.encoding==="base64")text=unb64(j.content);
+    else{var rr=await api("/contents/games.json",{headers:{"Accept":"application/vnd.github.raw+json"}});text=await rr.text()}
+    var d=JSON.parse(text);d.links=d.links||[];d.games=d.games||[];return d;
+  }
+  async function save(){
+    var cur=await api("/contents/games.json");
+    var curSha=cur.ok?(await cur.json()).sha:null;
+    var body={message:"Update games from admin panel",content:b64(JSON.stringify(S,null,2)),sha:curSha||undefined};
+    var r=await api("/contents/games.json",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
+    if(!r.ok){
+      var t="";try{t=(await r.json()).message}catch(e){}
+      throw new Error(r.status===403||r.status===401?"This key is not allowed to change the repository.":"Could not publish: "+(t||r.status));
+    }
+    sha=(await r.json()).content.sha;
+  }
+
+  /* ---------- login ---------- */
+  async function enter(c,remember){
+    cfg=c;say("lstatus","Checking…");
+    try{
+      await verify();S=await load();
+      if(remember){try{localStorage.setItem(KEY,JSON.stringify(c))}catch(e){}}
+      $("login").hidden=true;$("panel").hidden=false;$("bar").hidden=false;
+      say("lstatus","");render();setDirty(false);
+    }catch(e){cfg=null;say("lstatus",e.message||"Could not log in.","err");$("login").hidden=false}
+  }
+  $("lform").addEventListener("submit",function(ev){
+    ev.preventDefault();
+    enter({owner:$("lOwner").value.trim(),repo:$("lRepo").value.trim(),token:$("lToken").value.trim()},$("lRemember").checked);
+  });
+  $("logout").onclick=function(){
+    if(dirty&&!confirm("You have unpublished changes. Log out anyway?"))return;
+    try{localStorage.removeItem(KEY)}catch(e){}
+    location.reload();
+  };
+  try{var saved=JSON.parse(localStorage.getItem(KEY)||"null");
+    if(saved&&saved.token){$("lOwner").value=saved.owner;$("lRepo").value=saved.repo;enter(saved,true)}}catch(e){}
+
+  /* ---------- images: shrink in the browser, store inside games.json ---------- */
+  function shrink(file,maxW,q){
+    return new Promise(function(res,rej){
+      var img=new Image(),u=URL.createObjectURL(file);
+      img.onload=function(){
+        var w=Math.min(maxW,img.width),h=Math.round(img.height*w/img.width),c=document.createElement("canvas");
+        c.width=w;c.height=h;c.getContext("2d").drawImage(img,0,0,w,h);URL.revokeObjectURL(u);
+        res(c.toDataURL("image/jpeg",q));
+      };
+      img.onerror=function(){URL.revokeObjectURL(u);rej(new Error("That file is not a picture."))};
+      img.src=u;
+    });
+  }
+
+  /* ---------- render ---------- */
+  function render(){
+    var list=$("glist");list.textContent="";
+    S.games.forEach(function(g,i){
+      var it=el("div","item"),th=el("div","thumb");
+      if(g.cover)th.style.backgroundImage='url("'+g.cover.replace(/["\\]/g,"")+'")';
+      it.appendChild(th);
+      var b=el("b",null,g.title);b.appendChild(el("small",null,g.cat+(g.size?" · "+g.size:"")+(g.ver?" · "+g.ver:"")));it.appendChild(b);
+      var bt=el("div","btns");
+      var up=el("button","btn small","↑");up.type="button";up.disabled=i===0;up.setAttribute("aria-label","Move up");up.onclick=function(){mv(i,-1)};
+      var dn=el("button","btn small","↓");dn.type="button";dn.disabled=i===S.games.length-1;dn.setAttribute("aria-label","Move down");dn.onclick=function(){mv(i,1)};
+      var ed=el("button","btn small","Edit");ed.type="button";ed.onclick=function(){edit(g.id)};
+      var de=el("button","btn small danger","Delete");de.type="button";de.onclick=function(){
+        if(de.dataset.sure!=="1"){de.dataset.sure="1";de.textContent="Tap again";return}
+        S.games.splice(i,1);if(editingId===g.id)resetForm();setDirty(true);render();
+      };
+      [up,dn,ed,de].forEach(function(x){bt.appendChild(x)});it.appendChild(bt);list.appendChild(it);
+    });
+    if(!S.games.length)list.appendChild(el("p","help","No games yet. Add your first one above."));
+    var cats=[];S.games.forEach(function(g){if(cats.indexOf(g.cat)<0)cats.push(g.cat)});
+    var dl=$("cats");dl.textContent="";cats.forEach(function(c){var o=el("option");o.value=c;dl.appendChild(o)});
+    $("sName").value=S.name||"";$("sWelcome").value=S.welcome||"";
+    $("sLinks").value=(S.links||[]).map(function(l){return l.label+" | "+l.url}).join("\n");
+    var ad=S.ads||{};$("aTop").value=ad.top||"";$("aBottom").value=ad.bottom||"";$("aGlobal").value=ad.global||"";
+    $("logoNow").textContent=S.logo?"A logo is set. Choose a new image to replace it.":"No logo yet. The first letters of the name are shown.";
+  }
+  function mv(i,d){var j=i+d;if(j<0||j>=S.games.length)return;var t=S.games[i];S.games[i]=S.games[j];S.games[j]=t;setDirty(true);render()}
+  function resetForm(){editingId=null;$("gform").reset();$("fNew").checked=true;$("gformTitle").textContent="Add a game";$("fSave").textContent="Add game";$("fCancel").hidden=true}
+  function edit(id){
+    var g=S.games.filter(function(x){return x.id===id})[0];if(!g)return;editingId=id;
+    $("fTitle").value=g.title;$("fDl").value=g.dl;$("fCat").value=g.cat;$("fSize").value=g.size||"";$("fVer").value=g.ver||"";
+    $("fNew").checked=!!g.isNew;$("fCover").value="";
+    $("gformTitle").textContent="Edit game";$("fSave").textContent="Update game";$("fCancel").hidden=false;
+    $("gform").scrollIntoView({behavior:"smooth",block:"start"});
+  }
+  $("fCancel").onclick=resetForm;
+
+  $("gform").addEventListener("submit",async function(ev){
+    ev.preventDefault();
+    var dl=$("fDl").value.trim();
+    if(!/^https?:\/\//i.test(dl)){say("status","The download link must start with https://","err");return}
+    var cover=null,f=$("fCover").files[0];
+    if(f){try{cover=await shrink(f,560,.78)}catch(e){say("status",e.message,"err");return}}
+    var data={title:$("fTitle").value.trim(),cat:$("fCat").value.trim(),size:$("fSize").value.trim(),ver:$("fVer").value.trim(),dl:dl,isNew:$("fNew").checked};
+    if(editingId){
+      S.games=S.games.map(function(g){if(g.id!==editingId)return g;var n=Object.assign({},g,data);if(cover)n.cover=cover;return n});
+    }else{
+      data.id="g"+Date.now().toString(36);data.hue=Math.floor(Math.random()*360);data.cover=cover||"";S.games.unshift(data);
+    }
+    resetForm();setDirty(true);render();say("status","Game added to the list. Tap Publish to put it on the site.","ok");
+  });
+  $("sform").addEventListener("submit",async function(ev){
+    ev.preventDefault();
+    S.name=$("sName").value.trim()||S.name;S.welcome=$("sWelcome").value.trim();
+    var f=$("sLogo").files[0];
+    if(f){try{S.logo=await shrink(f,320,.85)}catch(e){say("status",e.message,"err");return}}
+    S.links=$("sLinks").value.split("\n").map(function(l){var p=l.split("|");return{label:(p[0]||"").trim(),url:p.slice(1).join("|").trim()}})
+      .filter(function(l){return l.label&&/^https?:\/\//i.test(l.url)});
+    S.ads={top:$("aTop").value.trim(),bottom:$("aBottom").value.trim(),global:$("aGlobal").value.trim()};
+    $("sLogo").value="";setDirty(true);render();say("status","Settings applied. Tap Publish to put them on the site.","ok");
+  });
+
+  $("publish").onclick=async function(){
+    this.disabled=true;say("status","Publishing…");
+    try{await save();setDirty(false);say("status","Published. The live site updates in about one minute.","ok")}
+    catch(e){this.disabled=false;say("status",e.message||"Could not publish.","err")}
+  };
+  function tab(g){
+    $("tGames").setAttribute("aria-pressed",g);$("tSite").setAttribute("aria-pressed",!g);
+    $("pGames").style.display=g?"grid":"none";$("pSite").style.display=g?"none":"block";
+  }
+  $("tGames").onclick=function(){tab(true)};$("tSite").onclick=function(){tab(false)};
+})();
+</script>
+</body>
+</html>
